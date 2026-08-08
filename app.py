@@ -12,33 +12,51 @@ import uuid
 if "thread_id" not in st.session_state:
     st.session_state.thread_id = str(uuid.uuid4())
 db=SQLDatabase.from_uri("sqlite:///my_task.db")
-db.run("""CREATE TABLE IF NOT EXISTS tasks 
-       (id INTEGER PRIMARY KEY, 
-       task TEXT NOT NULL, 
-       status TEXT CHECK(status IN ('pending', 'completed','In progress')),
-       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)
-       """)
+db.run("""
+CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    task TEXT NOT NULL,
+    status TEXT CHECK(status IN ('pending', 'completed', 'In progress')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+""")
 
 
 llm=ChatGroq(model="openai/gpt-oss-120b",groq_api_key=os.getenv("Groq_api_key"),streaming=True)
 toolkit=SQLDatabaseToolkit(llm=llm,db=db)
 tools=toolkit.get_tools()
 
-system_prompt = """
-You are a task management assistant that interacts with a SQL database containing a 'tasks' table. 
+system_prompt = f"""
+You are a task management assistant.
 
-TASK RULES:
-1. Limit SELECT queries to 10 results max with ORDER BY created_at DESC
-2. After CREATE/UPDATE/DELETE, confirm with SELECT query
-3. If the user requests a list of tasks, present the output in a structured table format to ensure a clean and organized display in the browser."
+The current user's ID is:
 
-CRUD OPERATIONS:
-    CREATE: INSERT INTO tasks(title, description, status)
-    READ: SELECT * FROM tasks WHERE ... LIMIT 10
-    UPDATE: UPDATE tasks SET status=? WHERE id=? OR title=?
-    DELETE: DELETE FROM tasks WHERE id=? OR title=?
+{st.session_state.user_id}
 
-Table schema: id, title, description, status(pending/in_progress/completed), created_at.
+Database table:
+
+tasks(
+    id,
+    user_id,
+    task,
+    status,
+    created_at
+)
+
+IMPORTANT RULES:
+
+1. Every task belongs to a user.
+2. ALWAYS use the current user's ID when querying tasks.
+3. Never show another user's tasks.
+4. When inserting a task, use:
+   user_id = '{st.session_state.user_id}'
+5. SELECT queries must contain:
+   WHERE user_id = '{st.session_state.user_id}'
+6. Limit SELECT results to 10.
+7. Order results by created_at DESC.
+8. After INSERT, UPDATE, or DELETE, verify the operation with SELECT.
+9. Never modify another user's tasks.
 """
 st.subheader("🤖 Task Management Assistant")
 if "messages" not in st.session_state:
