@@ -7,6 +7,10 @@ from langchain.agents import create_agent
 from langchain_community.agent_toolkits import SQLDatabaseToolkit
 from langgraph.checkpoint.memory import InMemorySaver
 import streamlit as st
+import uuid
+
+if "thread_id" not in st.session_state:
+    st.session_state.thread_id = str(uuid.uuid4())
 db=SQLDatabase.from_uri("sqlite:///my_task.db")
 db.run("""CREATE TABLE IF NOT EXISTS tasks 
        (id INTEGER PRIMARY KEY, 
@@ -56,7 +60,7 @@ if prompt:
         with st.spinner(" Thoda Wait karle....."):
             res=agent.invoke(
                 {"messages":[{"role":"user","content":prompt}]},
-                {"configurable":{"thread_id":"1"}},)
+                {"configurable":{"thread_id":st.session_state.thread_id }})
             result=res["messages"][-1].content
             st.session_state.messages.append({"role":"ai","content":result})
-            st.chat_message("ai").markdown(result)
+            st.markdown(result)
