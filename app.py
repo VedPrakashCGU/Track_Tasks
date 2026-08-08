@@ -19,7 +19,7 @@ db.run("""CREATE TABLE IF NOT EXISTS tasks
 llm=ChatGroq(model="openai/gpt-oss-120b",groq_api_key=os.getenv("Groq_api_key"),streaming=True)
 toolkit=SQLDatabaseToolkit(llm=llm,db=db)
 tools=toolkit.get_tools()
-memory=InMemorySaver()
+
 system_prompt = """
 You are a task management assistant that interacts with a SQL database containing a 'tasks' table. 
 
@@ -44,6 +44,7 @@ for message in st.session_state.messages:
     st.chat_message(message["role"]).markdown(message["content"])
 @st.cache_resource
 def createAgent():
+    memory=InMemorySaver()
     agent=create_agent(model=llm,tools=tools,system_prompt=system_prompt,checkpointer=memory)
     return agent
 agent=createAgent()
@@ -52,7 +53,7 @@ if prompt:
     st.session_state.messages.append({"role":"user","content":prompt})
     st.chat_message("user").markdown(prompt)
     with st.chat_message("ai"):
-        with st.spinner("BehnChod Thoda Wait kar....."):
+        with st.spinner(" Thoda Wait karle....."):
             res=agent.invoke(
                 {"messages":[{"role":"user","content":prompt}]},
                 {"configurable":{"thread_id":"1"}},)
