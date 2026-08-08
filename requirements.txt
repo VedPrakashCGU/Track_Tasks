@@ -3,3 +3,4 @@ langchain_community
 dotenv
 streamlit
 langgraph
+langchain_groq
