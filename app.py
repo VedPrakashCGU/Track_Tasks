@@ -9,8 +9,6 @@ from langgraph.checkpoint.memory import InMemorySaver
 import streamlit as st
 import uuid
 
-if "thread_id" not in st.session_state:
-    st.session_state.thread_id = str(uuid.uuid4())
 db=SQLDatabase.from_uri("sqlite:///my_task.db")
 db.run("""
 CREATE TABLE IF NOT EXISTS tasks (
@@ -26,7 +24,10 @@ CREATE TABLE IF NOT EXISTS tasks (
 llm=ChatGroq(model="openai/gpt-oss-120b",groq_api_key=os.getenv("Groq_api_key"),streaming=True)
 toolkit=SQLDatabaseToolkit(llm=llm,db=db)
 tools=toolkit.get_tools()
-
+if "thread_id" not in st.session_state:
+    st.session_state.thread_id = str(uuid.uuid4())
+if "thread_id" not in st.session_state:
+    st.session_state.thread_id = st.session_state.user_id
 system_prompt = f"""
 You are a task management assistant.
 
